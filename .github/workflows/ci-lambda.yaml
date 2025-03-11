@@ -1,0 +1,60 @@
+name: CI - Build & Push Artifacts
+on:
+    push:
+      branches:
+        - main
+   
+permissions:
+      contents: read
+   
+jobs:
+    build:
+      name: Build Artifacts
+      runs-on: ubuntu-latest
+   
+      env:
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+        IMAGE_TAG: latest
+   
+      steps:
+        - name: Checkout Repository
+          uses: actions/checkout@v4
+   
+        - name: Setup AWS Credentials
+          uses: aws-actions/configure-aws-credentials@v3
+          with:
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region: ${{ secrets.AWS_REGION }}
+   
+        - name: Run Terraform to Create ZIP File
+          run: terraform init && terraform apply -auto-approve
+   
+        - name: Verify Lambda ZIP File Exists
+          run: |
+            if [ ! -f "python/lambda.zip" ]; then
+              echo "❌ Lambda ZIP file not found!"
+              exit 1
+            fi
+            echo "✅ Lambda ZIP file found!"
+   
+        - name: Upload Lambda ZIP to S3
+          run: |
+            aws s3 cp python/lambda.zip s3://${{ secrets.S3_BUCKET_NAME }}/lambda.zip
+   
+        - name: Login to Amazon ECR
+          run: |
+            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin ${{ secrets.ECR_REPOSITORY }}
+   
+        - name: Build and Push Docker Image to ECR
+          run: |
+            docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
+            docker tag $ECR_REPOSITORY:$IMAGE_TAG $ECR_REPOSITORY:$IMAGE_TAG
+            docker push $ECR_REPOSITORY:$IMAGE_TAG
+   
+        - name: Store Artifacts
+          uses: actions/upload-artifact@v4
+          with:
+            name: lambda-package
+            path: python/lambda.zip

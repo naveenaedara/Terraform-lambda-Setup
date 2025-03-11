@@ -1,0 +1,50 @@
+name: CD - Deploy Lambda with Terraform
+ 
+on:
+  workflow_run:
+    workflows: ["CI - Build & Push Artifacts"]
+    types:
+      - completed
+ 
+permissions:
+  contents: read
+ 
+jobs:
+  deploy:
+    name: Deploy AWS Lambda
+    runs-on: ubuntu-latest
+ 
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+      S3_LAMBDA_KEY: "lambda.zip"
+ 
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+ 
+      - name: Setup AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+ 
+      - name: Download Lambda Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: lambda-package
+ 
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: latest
+ 
+      - name: Initialize Terraform
+        run: terraform init
+ 
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+ 
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
