@@ -64,7 +64,7 @@ data "archive_file" "zip_the_python_code" {
 # Create a lambda function
 # In terraform ${path.module} is the current directory.
 resource "aws_lambda_function" "terraform_lambda_func" {
- filename                       = "${path.module}/python/hello-python.zip"
+ filename                       = "${path.module}/python/lambda.zip"
  function_name                  = "POC-5-Test-Lambda-Function"
  role                           = aws_iam_role.lambda_role.arn
  handler                        = "hello-python.lambda_handler"
