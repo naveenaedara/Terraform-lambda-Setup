@@ -48,18 +48,18 @@ jobs:
           run: |
             aws s3 cp python/lambda.zip s3://${{ secrets.S3_BUCKET_NAME }}/lambda.zip
    
-        - name: Login to Amazon ECR
-          run: |
-            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin ${{ secrets.ECR_REPOSITORY }}
+       # - name: Login to Amazon ECR
+       #   run: |
+       #     aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin ${{ secrets.ECR_REPOSITORY }}
    
-        - name: Build and Push Docker Image to ECR
-          run: |
-            docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
-            docker tag $ECR_REPOSITORY:$IMAGE_TAG $ECR_REPOSITORY:$IMAGE_TAG
-            docker push $ECR_REPOSITORY:$IMAGE_TAG
+       # - name: Push Zip file to ECR
+       #   run: |
+       #     docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
+       #     docker tag $ECR_REPOSITORY:$IMAGE_TAG $ECR_REPOSITORY:$IMAGE_TAG
+       # docker push $ECR_REPOSITORY:$IMAGE_TAG
    
-        - name: Store Artifacts
-          uses: actions/upload-artifact@v4
-          with:
-            name: lambda-package
-            path: python/lambda.zip
+       # - name: Store Artifacts
+       #   uses: actions/upload-artifact@v4
+       #   with:
+       #     name: lambda-package
+       #     path: python/lambda.zip
